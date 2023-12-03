@@ -2,6 +2,7 @@ from openai import OpenAI
 import dotenv
 import base64
 
+
 # load env vars including OPENAI_API_KEY
 dotenv.load_dotenv()
 
