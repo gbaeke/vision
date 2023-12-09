@@ -1,7 +1,7 @@
 import dotenv
 from azure.core.credentials import AzureKeyCredential
 from azure.search.documents import SearchClient
-from azure.search.documents.models import VectorizedQuery
+from azure.search.documents.models import VectorizableTextQuery
 from azure.storage.blob import BlobServiceClient
 import requests
 import json
@@ -37,12 +37,6 @@ def get_image_vector(image_path: str) -> list:
     # return the vector
     return response.json().get('vector')
 
-def get_text_vector(text: str):
-    logger.info(f"Getting vector for {text}...")
-    oai_client = OpenAI()
-    embedding = oai_client.embeddings.create(input=[text], model="text-embedding-ada-002")
-    return embedding.data[0].embedding
-
 def download_from_azure_storage(url):
         # extract container name and filename from the url
         container_name = url.split('/')[3]
@@ -69,21 +63,20 @@ text_input = st.text_input("Enter text to search for:")
 
 # button to start the search
 if st.button("Search"):
-    # get the vector for the input text
-    text_vector = get_text_vector(text_input)
-
     
     # create a search client
     endpoint = "https://acs-geba.search.windows.net"
-    index_name = "images"
+    index_name = "images-sdk"
     credential = AzureKeyCredential(os.getenv("AZURE_AI_SEARCH_KEY"))
     client = SearchClient(endpoint=endpoint, index_name=index_name, credential=credential)
 
-    vector_query = VectorizedQuery(vector=text_vector, k_nearest_neighbors=2, fields="textVector", exhaustive=True)
+    # this requires azure-search-documents installed from whl (whl folder)
+    vector_query = VectorizableTextQuery(text=text_input, k=2, fields="textVector", exhaustive=True)
 
 
     # search the index
     results = client.search(
+        search_text=None,
         vector_queries=[vector_query],
         select=["name", "description", "url"]
     )
